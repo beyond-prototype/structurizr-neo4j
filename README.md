@@ -1,1 +1,21 @@
-# structurizr-neo4j
+# Neo4j Desktop
+
+https://neo4j.com/download-thanks-desktop/?edition=desktop&flavour=osx&release=1.5.9&offline=false
+
+## Neo4j Desktop for Windows
+https://neo4j.com/artifact.php?name=neo4j-desktop-1.5.9-setup.exe
+
+## Neo4j Desktop for Mac OS
+https://neo4j.com/artifact.php?name=neo4j-desktop-1.5.9.dmg
+
+Neo4j Desktop Activation Key
+
+```
+eyJhbGciOiJQUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Ii4rQC4rIiwibWl4cGFuZWxJZCI6IiRkZXZpY2U6MThlM2QzZDI5NjQ0YjktMDUyYzRhOTY4ODA0YjEtMWQ1MjU2MzctMTZhN2YwLTE4ZTNkM2QyOTY1NGI5IiwibWl4cGFuZWxQcm9qZWN0SWQiOiI0YmZiMjQxNGFiOTczYzc0MWI2ZjA2N2JmMDZkNTU3NSIsIm9yZyI6Ii4qIiwicHViIjoibmVvNGouY29tIiwicmVnIjoiICIsInN1YiI6Im5lbzRqLWRlc2t0b3AiLCJleHAiOjE3NDQ1OTkxODMsInZlciI6IioiLCJpc3MiOiJuZW80ai5jb20iLCJuYmYiOjE3MTMwNjMxODMsImlhdCI6MTcxMzA2MzE4MywianRpIjoiSHMxMDQ4anp5In0.qqDDSb5VQx8ayD-EiMwKZRaDOD2MkCCOOTHQYynTdyv5j4oaYw1w5VV9vxhlZZ8rp_BDHOmYaXgNhcXRe6FfKKFUfnDgIk04CXMPHLWzite20rxlEFDux2s8zAtD7TfBZwJE91rp0BEFIbEqzwJ4CJ4fcLGhEmWvQCRX9TRwq9tFEVtSTzIJrqrwoLXVMDdj-3BvYryqjKTbuUDoFyjLaAM7dMR-WQWheQ8RLQe7yh0X3X8K3Nrjz5sghHytk98Q563cT30RQAyxmjw93Jf7BxtsmzHof3sodV6ihV_10KnqT3JofOm8EK25MQj-wInLosXK0-a9LlZqrFI9rU1DAg
+```
+
+## Neo4j browser
+
+https://github.com/neo4j/neo4j-browser
+
+https://github.com/neo4j/neo4j-browser/releases/tag/5.15.0
