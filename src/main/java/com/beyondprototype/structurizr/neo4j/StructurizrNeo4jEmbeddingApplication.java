@@ -41,32 +41,56 @@ public class StructurizrNeo4jEmbeddingApplication {
 				AuthTokens.basic(dotenv.get("spring.neo4j.authentication.username"), dotenv.get("spring.neo4j.authentication.password")))) {
 			driver.verifyConnectivity();
 
-			Neo4jVectorStore neo4jVectorStore = createVectorStore(dotenv, driver);
+//			Neo4jVectorStore neo4jVectorStore = createVectorStore(dotenv, driver);
+
+			MistralAiApi mistralAiApi = new MistralAiApi(dotenv.get("spring.ai.mistralai.api-key"));
+			EmbeddingClient embeddingClient = new MistralAiEmbeddingClient(mistralAiApi);
+			System.out.println("embeddingClient.dimensions() = "+embeddingClient.dimensions());
 
 			//https://neo4j.com/docs/java-manual/current/transactions/
 			try (Session session = driver.session(SessionConfig.builder().withDatabase("neo4j").build())) {
 				//clean up
-				session.run( "MATCH ()-[r]-() DELETE r" );
+				session.run( "MATCH ()-[r:Uses]-() DELETE r" );
+				session.run( "MATCH ()-[r:Contains]-() DELETE r" );
 				session.run( "MATCH (p) DELETE p" );
 				session.run("drop index Element_index if exists");
+				session.run("drop index Relationship_index if exists");
+
+				session.run("""
+        						CREATE VECTOR INDEX Relationship_index
+								IF NOT EXISTS
+								FOR ()-[r:Uses]-() ON (r.embedding)
+								OPTIONS {indexConfig: {
+								 `vector.dimensions`: %s,
+								 `vector.similarity_function`: '%s'
+								}}""".formatted(embeddingClient.dimensions(), "cosine"));
+
+				session.run("""
+        						CREATE VECTOR INDEX Element_index
+								IF NOT EXISTS
+								FOR (e:Element) ON (e.embedding)
+								OPTIONS {indexConfig: {
+								 `vector.dimensions`: %s,
+								 `vector.similarity_function`: '%s'
+								}}""".formatted(embeddingClient.dimensions(), "cosine"));
 
 				for(String ws: workspaces) {
 					parser.parse(new File(ws));
 					Workspace workspace = parser.getWorkspace();
-
-					String cypher = "MERGE (:%s {name: $name, description: $description, tags: $tags, type: $type, parent: $parent, source: '%s'})";
+//					String cypher = "MERGE (:%s {name: $name, description: $description, tags: $tags, type: $type, parent: $parent, source: '%s'})";
+					String cypher = "MERGE (:%s {name: $name, description: $description, tags: $tags, type: $type, parent: $parent, source: '%s', embedding:$embedding})";
 					//persist person
 					workspace.getModel().getPeople().forEach(person -> {
 //						// session.run("MERGE (:Person {name: $person.name, description: $person.description, tags: $person.tags})", Map.of("person", mapOf(person)));
 //						session.run(cypher.formatted(typeOf(person)),mapOf(person));
-						session.run(cypher.formatted("Element", workspace.getName()),mapOf(person));
+						session.run(cypher.formatted("Element", workspace.getName()),embed(person,embeddingClient));
 					});
 
 					//persist software system
 					workspace.getModel().getSoftwareSystems().forEach(system -> {
 //						//session.run("MERGE (:SoftwareSystem {name: $system.name, description: $system.description, tags: $system.tags})", Map.of("system", mapOf(system)));
 //						session.run(cypher.formatted(typeOf(system)),mapOf(system));
-						session.run(cypher.formatted("Element", workspace.getName()),mapOf(system));
+						session.run(cypher.formatted("Element", workspace.getName()),embed(system,embeddingClient));
 
 						//persist containers
 						system.getContainers().forEach(container -> {
@@ -76,7 +100,7 @@ public class StructurizrNeo4jEmbeddingApplication {
 //											" MERGE (system)-[:Contains]->(container)",
 //									Map.of("system", mapOf(system), "container", mapOf(container)));
 
-							session.run(cypher.formatted("Element", workspace.getName()),mapOf(container));
+							session.run(cypher.formatted("Element", workspace.getName()),embed(container,embeddingClient));
 							session.run("MATCH (system:Element {name: $system.name, type:'SoftwareSystem'}),(container:Element {name: $container.name, type:'Container'}) " +
 											" MERGE (system)-[:Contains]->(container)",
 									Map.of("system", mapOf(system), "container", mapOf(container)));
@@ -88,7 +112,7 @@ public class StructurizrNeo4jEmbeddingApplication {
 //												" MERGE (container)-[:Contains]->(component) ",
 //										Map.of("container", mapOf(container), "component", mapOf(component)));
 
-								session.run(cypher.formatted("Element", workspace.getName()),mapOf(component));
+								session.run(cypher.formatted("Element", workspace.getName()),embed(component, embeddingClient));
 								session.run(" MATCH (container:Element {name: $container.name, type:'Container'}), (component:Element {name: $component.name, type:'Component'})" +
 												" MERGE (container)-[:Contains]->(component) ",
 										Map.of("container", mapOf(container), "component", mapOf(component)));
@@ -109,8 +133,16 @@ public class StructurizrNeo4jEmbeddingApplication {
 
 						sql = new StringBuffer();
 						sql.append(" MATCH (source:Element {name: $source.name, type: $source.type}), (destination:Element {name: $destination.name, type:$destination.type})");
-						sql.append(" MERGE (source)-[:Uses {description: $relationship.description, technology: $relationship.technology}]->(destination)");
-						session.run(sql.toString(),Map.of("source", mapOf(source),
+//						sql.append(" MERGE (source)-[:Uses {description: $relationship.description, technology: $relationship.technology, source: $source.name, destination: $destination.name}]->(destination)");
+//						session.run(sql.toString(),Map.of("source", mapOf(source),
+//								"destination", mapOf(destination),
+//								"relationship", mapOf(relationship)));
+
+						String text = "source: %s\ndestination: %s\ndescription: %s".formatted(source.getName(),destination.getName(),relationship.getDescription());
+						sql.append(" MERGE (source)-[:Uses {technology: $relationship.technology, source: $source.name, destination: $destination.name,description: $relationship.description, embedding: $embedding}]->(destination)");
+						session.run(sql.toString(),Map.of(
+								"embedding", embeddingClient.embed(text),
+								"source", mapOf(source),
 								"destination", mapOf(destination),
 								"relationship", mapOf(relationship)));
 					});
@@ -187,12 +219,26 @@ public class StructurizrNeo4jEmbeddingApplication {
 	}
 
 	public static Map<String, Object> mapOf(Element element) {
-		return Map.of("name", element.getName() == null?"":element.getName(),
-				"description", element.getDescription() == null?"":element.getDescription(),
+		String name = element.getName() == null?"":element.getName();
+		String description = element.getDescription() == null?"":element.getDescription();
+		String type = typeOf(element);
+		return Map.of("name", name,
+				"description", description,
 				"tags",element.getTags(),
-				"type", typeOf(element),
+				"type", type,
 				"parent", element.getParent() == null ? "":element.getParent().getName());
-//				"source", "dummy workspace");
+	}
+
+	public static Map<String, Object> embed(Element element, EmbeddingClient embeddingClient) {
+		String name = element.getName() == null?"":element.getName();
+		String description = element.getDescription() == null?"":element.getDescription();
+		String type = typeOf(element);
+		return Map.of("name", name,
+				"description", description,
+				"tags",element.getTags(),
+				"type", type,
+				"parent", element.getParent() == null ? "":element.getParent().getName(),
+				"embedding", embeddingClient.embed("name: %s\ntype: %s\ndescription: %s".formatted(name, type, description)));
 	}
 
 	public static Map<String, Object> mapOf(Relationship relationship) {
@@ -241,4 +287,6 @@ public class StructurizrNeo4jEmbeddingApplication {
 
 		return neo4jVector;
 	}
+
+
 }
