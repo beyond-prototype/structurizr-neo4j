@@ -48,40 +48,51 @@ public class StructurizrNeo4jEmbeddingApplication {
 				//clean up
 				session.run( "MATCH ()-[r]-() DELETE r" );
 				session.run( "MATCH (p) DELETE p" );
+				session.run("drop index Element_index if exists");
 
 				for(String ws: workspaces) {
 					parser.parse(new File(ws));
 					Workspace workspace = parser.getWorkspace();
 
+					String cypher = "MERGE (:%s {name: $name, description: $description, tags: $tags, type: $type, parent: $parent, source: '%s'})";
 					//persist person
 					workspace.getModel().getPeople().forEach(person -> {
-						session.run("MERGE (:Person {name: $person.name, description: $person.description, tags: $person.tags})", Map.of("person", mapOf(person)));
+//						// session.run("MERGE (:Person {name: $person.name, description: $person.description, tags: $person.tags})", Map.of("person", mapOf(person)));
+//						session.run(cypher.formatted(typeOf(person)),mapOf(person));
+						session.run(cypher.formatted("Element", workspace.getName()),mapOf(person));
 					});
 
 					//persist software system
 					workspace.getModel().getSoftwareSystems().forEach(system -> {
-						session.run("MERGE (:SoftwareSystem {name: $system.name, description: $system.description, tags: $system.tags})", Map.of("system", mapOf(system)));
+//						//session.run("MERGE (:SoftwareSystem {name: $system.name, description: $system.description, tags: $system.tags})", Map.of("system", mapOf(system)));
+//						session.run(cypher.formatted(typeOf(system)),mapOf(system));
+						session.run(cypher.formatted("Element", workspace.getName()),mapOf(system));
 
 						//persist containers
 						system.getContainers().forEach(container -> {
-							session.run("MERGE (:Container {name: $container.name, description: $container.description, tags: $container.tags})", Map.of("container", mapOf(system)));
-//							session.run("MATCH (system:SoftwareSystem {name: $system.name}), (container:Container {name: $container.name}) " +
-//									" CREATE (system)-[:Contains]->(container)",
+//							//session.run("MERGE (:Container {name: $container.name, description: $container.description, tags: $container.tags})", Map.of("container", mapOf(system)));
+//							session.run(cypher.formatted(typeOf(container)),mapOf(container));
+//							session.run("MATCH (system:SoftwareSystem {name: $system.name}),(container:Container {name: $container.name}) " +
+//											" MERGE (system)-[:Contains]->(container)",
 //									Map.of("system", mapOf(system), "container", mapOf(container)));
 
-							session.run("MATCH (system:SoftwareSystem {name: $system.name}) " +
-											" MERGE (system)-[:Contains]->(container:Container {name: $container.name})",
+							session.run(cypher.formatted("Element", workspace.getName()),mapOf(container));
+							session.run("MATCH (system:Element {name: $system.name, type:'SoftwareSystem'}),(container:Element {name: $container.name, type:'Container'}) " +
+											" MERGE (system)-[:Contains]->(container)",
 									Map.of("system", mapOf(system), "container", mapOf(container)));
 
 							container.getComponents().forEach(component -> {
-								session.run(" MERGE (:Component {name: $component.name, description: $component.description, tags: $component.tags})", Map.of("component", mapOf(component)));
-//								session.run(" MATCH (container:Container {name: $container.name}), (component:Component {name: $component.name}) " +
-//												" CREATE (container)-[:Contains]->(component)",
+//								//session.run(" MERGE (:Component {name: $component.name, description: $component.description, tags: $component.tags})", Map.of("component", mapOf(component)));
+//								session.run(cypher.formatted(typeOf(component)),mapOf(component));
+//								session.run(" MATCH (container:Container {name: $container.name}), (component:Component {name: $component.name})" +
+//												" MERGE (container)-[:Contains]->(component) ",
 //										Map.of("container", mapOf(container), "component", mapOf(component)));
 
-								session.run(" MATCH (container:Container {name: $container.name})" +
-												" MERGE (container)-[:Contains]->(component:Component {name: $component.name}) ",
+								session.run(cypher.formatted("Element", workspace.getName()),mapOf(component));
+								session.run(" MATCH (container:Element {name: $container.name, type:'Container'}), (component:Element {name: $component.name, type:'Component'})" +
+												" MERGE (container)-[:Contains]->(component) ",
 										Map.of("container", mapOf(container), "component", mapOf(component)));
+
 							});
 						});
 					});
@@ -90,33 +101,35 @@ public class StructurizrNeo4jEmbeddingApplication {
 							Element destination = relationship.getDestination();
 							Element source = relationship.getSource();
 							StringBuffer sql = new StringBuffer();
-							sql.append(" MATCH  (source:%s {name: $source.name}), (destination:%s {name: $destination.name})".formatted(typeOf(source),typeOf(destination)));
-//							sql.append(" CREATE (source)-[:`%s`]->(destination)".formatted(relationship.getDescription()));
-//							if (source instanceof Person && destination instanceof Person){
-//								sql.append(" CREATE (source)-[:Interacts {description: $relationship.description}]->(destination)");
-//							}
-							sql.append(" MERGE (source)-[:Uses {description: $relationship.description}]->(destination)");
-							session.run(sql.toString(),Map.of("source", mapOf(source),
-									"destination", mapOf(destination),
-									"relationship", mapOf(relationship)));
+//							sql.append(" MATCH  (source:%s {name: $source.name}), (destination:%s {name: $destination.name})".formatted(typeOf(source),typeOf(destination)));
+//							sql.append(" MERGE (source)-[:Uses {description: $relationship.description}]->(destination)");
+//							session.run(sql.toString(),Map.of("source", mapOf(source),
+//									"destination", mapOf(destination),
+//									"relationship", mapOf(relationship)));
+
+						sql = new StringBuffer();
+						sql.append(" MATCH (source:Element {name: $source.name, type: $source.type}), (destination:Element {name: $destination.name, type:$destination.type})");
+						sql.append(" MERGE (source)-[:Uses {description: $relationship.description, technology: $relationship.technology}]->(destination)");
+						session.run(sql.toString(),Map.of("source", mapOf(source),
+								"destination", mapOf(destination),
+								"relationship", mapOf(relationship)));
 					});
 
-					//Create embedding for selected types of elements
-					Set<String> types = Set.of("Person", "SoftwareSystem", "Container", "Component");
-					List<Document> documents = new ArrayList<>();
-
-					workspace.getModel().getElements().forEach(element -> {
-						if (types.contains(typeOf(element))) {
-							documents.add(new Document(element.getName(),
-									"Name:%s\nDescription:%s".formatted(element.getName(), element.getDescription()),
-									Map.of("tags", element.getTags(),
-											"name", element.getName(),
-											"type", typeOf(element),
-											"parent", element.getParent() == null?"":element.getParent().getName(),
-											"source", workspace.getName())));
-						}
-					});
-					neo4jVectorStore.add(documents);
+//					//Create embedding for selected types of elements
+//					Set<String> types = Set.of("Person", "SoftwareSystem", "Container", "Component");
+//					List<Document> documents = new ArrayList<>();
+//					workspace.getModel().getElements().forEach(element -> {
+//						if (types.contains(typeOf(element))) {
+//							documents.add(new Document("%s(%s)".formatted(typeOf(element),element.getName()),
+//									"Name: %s\nDescription: %s".formatted(element.getName(), element.getDescription()),
+//									Map.of("tags", element.getTags(),
+//											"name", element.getName(),
+//											"type", typeOf(element),
+//											"parent", element.getParent() == null?"":element.getParent().getName(),
+//											"source", workspace.getName())));
+//						}
+//					});
+//					neo4jVectorStore.add(documents);
 				}
 
 				//get all objects
@@ -176,12 +189,17 @@ public class StructurizrNeo4jEmbeddingApplication {
 	public static Map<String, Object> mapOf(Element element) {
 		return Map.of("name", element.getName() == null?"":element.getName(),
 				"description", element.getDescription() == null?"":element.getDescription(),
-				"tags",element.getTags());
+				"tags",element.getTags(),
+				"type", typeOf(element),
+				"parent", element.getParent() == null ? "":element.getParent().getName());
+//				"source", "dummy workspace");
 	}
 
 	public static Map<String, Object> mapOf(Relationship relationship) {
+
 		return Map.of("description", relationship.getDescription(),
-				"tags",relationship.getTags());
+				"tags",relationship.getTags(),
+				"technology",relationship.getTechnology());
 	}
 
 	public static String typeOf(Element element) {
@@ -210,11 +228,13 @@ public class StructurizrNeo4jEmbeddingApplication {
 		EmbeddingClient embeddingClient = new MistralAiEmbeddingClient(mistralAiApi);
 		Neo4jVectorStore.Neo4jVectorStoreConfig config =  Neo4jVectorStore.Neo4jVectorStoreConfig
 				.builder()
-				.withLabel("Element")
+				.withLabel("Element1")
 				.withIdProperty("name")
 				.withEmbeddingProperty("embedding")
-				.withIndexName("Element_index")
-				.withConstraintName("Element_unique_idx")
+				.withIndexName("Element1_index")
+				.withConstraintName("Element1_unique_idx")
+				.withEmbeddingDimension(embeddingClient.dimensions())
+				.withDistanceType(Neo4jVectorStore.Neo4jDistanceType.COSINE)
 				.build();
 
 		Neo4jVectorStore neo4jVector = new Neo4jVectorStore(driver,embeddingClient, config);
