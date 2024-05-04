@@ -78,41 +78,29 @@ public class StructurizrNeo4jEmbeddingApplication {
 					parser.parse(new File(ws));
 					Workspace workspace = parser.getWorkspace();
 //					String cypher = "MERGE (:%s {name: $name, description: $description, tags: $tags, type: $type, parent: $parent, source: '%s'})";
-					String cypher = "MERGE (:%s {name: $name, description: $description, tags: $tags, type: $type, parent: $parent, source: '%s', embedding:$embedding})";
+					String cypher = "MERGE (:Element {name:$name, description:$description, tags:$tags, type:$type, parent:$parent, source:'%s', embedding:$embedding})".formatted(workspace.getName());
 					//persist person
 					workspace.getModel().getPeople().forEach(person -> {
 //						// session.run("MERGE (:Person {name: $person.name, description: $person.description, tags: $person.tags})", Map.of("person", mapOf(person)));
-//						session.run(cypher.formatted(typeOf(person)),mapOf(person));
-						session.run(cypher.formatted("Element", workspace.getName()),embed(person,embeddingClient));
+						session.run(cypher,embed(person,embeddingClient));
 					});
 
 					//persist software system
 					workspace.getModel().getSoftwareSystems().forEach(system -> {
 //						//session.run("MERGE (:SoftwareSystem {name: $system.name, description: $system.description, tags: $system.tags})", Map.of("system", mapOf(system)));
-//						session.run(cypher.formatted(typeOf(system)),mapOf(system));
-						session.run(cypher.formatted("Element", workspace.getName()),embed(system,embeddingClient));
+						session.run(cypher,embed(system,embeddingClient));
 
 						//persist containers
 						system.getContainers().forEach(container -> {
 //							//session.run("MERGE (:Container {name: $container.name, description: $container.description, tags: $container.tags})", Map.of("container", mapOf(system)));
-//							session.run(cypher.formatted(typeOf(container)),mapOf(container));
-//							session.run("MATCH (system:SoftwareSystem {name: $system.name}),(container:Container {name: $container.name}) " +
-//											" MERGE (system)-[:Contains]->(container)",
-//									Map.of("system", mapOf(system), "container", mapOf(container)));
-
-							session.run(cypher.formatted("Element", workspace.getName()),embed(container,embeddingClient));
+							session.run(cypher,embed(container,embeddingClient));
 							session.run("MATCH (system:Element {name: $system.name, type:'SoftwareSystem'}),(container:Element {name: $container.name, type:'Container'}) " +
 											" MERGE (system)-[:Contains]->(container)",
 									Map.of("system", mapOf(system), "container", mapOf(container)));
 
 							container.getComponents().forEach(component -> {
 //								//session.run(" MERGE (:Component {name: $component.name, description: $component.description, tags: $component.tags})", Map.of("component", mapOf(component)));
-//								session.run(cypher.formatted(typeOf(component)),mapOf(component));
-//								session.run(" MATCH (container:Container {name: $container.name}), (component:Component {name: $component.name})" +
-//												" MERGE (container)-[:Contains]->(component) ",
-//										Map.of("container", mapOf(container), "component", mapOf(component)));
-
-								session.run(cypher.formatted("Element", workspace.getName()),embed(component, embeddingClient));
+								session.run(cypher,embed(component, embeddingClient));
 								session.run(" MATCH (container:Element {name: $container.name, type:'Container'}), (component:Element {name: $component.name, type:'Component'})" +
 												" MERGE (container)-[:Contains]->(component) ",
 										Map.of("container", mapOf(container), "component", mapOf(component)));
@@ -121,26 +109,18 @@ public class StructurizrNeo4jEmbeddingApplication {
 						});
 					});
 
+
+					StringBuffer sql = new StringBuffer();
+					sql.append(" MATCH (source:Element {name: $source.name, type: $source.type}), (destination:Element {name: $destination.name, type:$destination.type})");
+					sql.append(" MERGE (source)-[:Uses {technology: $relationship.technology, origin: $source.name, destination: $destination.name,description: $relationship.description, source:'%s', embedding: $embedding}]->(destination)".formatted(workspace.getName()));
+					String relCypher = sql.toString();
+
 					workspace.getModel().getRelationships().forEach(relationship -> {
-							Element destination = relationship.getDestination();
-							Element source = relationship.getSource();
-							StringBuffer sql = new StringBuffer();
-//							sql.append(" MATCH  (source:%s {name: $source.name}), (destination:%s {name: $destination.name})".formatted(typeOf(source),typeOf(destination)));
-//							sql.append(" MERGE (source)-[:Uses {description: $relationship.description}]->(destination)");
-//							session.run(sql.toString(),Map.of("source", mapOf(source),
-//									"destination", mapOf(destination),
-//									"relationship", mapOf(relationship)));
+						Element destination = relationship.getDestination();
+						Element source = relationship.getSource();
 
-						sql = new StringBuffer();
-						sql.append(" MATCH (source:Element {name: $source.name, type: $source.type}), (destination:Element {name: $destination.name, type:$destination.type})");
-//						sql.append(" MERGE (source)-[:Uses {description: $relationship.description, technology: $relationship.technology, source: $source.name, destination: $destination.name}]->(destination)");
-//						session.run(sql.toString(),Map.of("source", mapOf(source),
-//								"destination", mapOf(destination),
-//								"relationship", mapOf(relationship)));
-
-						String text = "source: %s\ndestination: %s\ndescription: %s".formatted(source.getName(),destination.getName(),relationship.getDescription());
-						sql.append(" MERGE (source)-[:Uses {technology: $relationship.technology, source: $source.name, destination: $destination.name,description: $relationship.description, embedding: $embedding}]->(destination)");
-						session.run(sql.toString(),Map.of(
+						String text = "'%s' %s '%s'".formatted(source.getName(),relationship.getDescription(),destination.getName());
+						session.run(relCypher,Map.of(
 								"embedding", embeddingClient.embed(text),
 								"source", mapOf(source),
 								"destination", mapOf(destination),
