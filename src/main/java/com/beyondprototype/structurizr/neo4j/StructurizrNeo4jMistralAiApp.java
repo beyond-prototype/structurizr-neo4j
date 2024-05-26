@@ -3,11 +3,12 @@ package com.beyondprototype.structurizr.neo4j;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.*;
-import org.springframework.ai.document.Document;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.ai.mistralai.MistralAiChatClient;
+import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.MistralAiEmbeddingClient;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.vectorstore.SearchRequest;
 
 import java.util.List;
 
@@ -32,11 +33,12 @@ public class StructurizrNeo4jMistralAiApp {
 
 		Session session = driver.session(SessionConfig.builder().withDatabase(database == null?"neo4j":database).build());
 
+		MistralAiApi mistralAiApi = new MistralAiApi(dotenv.get("spring.ai.mistralai.api-key"));
 
-		EmbeddingClient embeddingClient = new MistralAiEmbeddingClient(new MistralAiApi(dotenv.get("spring.ai.mistralai.api-key")));
+		EmbeddingClient embeddingClient = new MistralAiEmbeddingClient(mistralAiApi);
 
-		StructurizrNeo4jVectorStoreEmbedding embedding = new StructurizrNeo4jVectorStoreEmbedding(session, embeddingClient);
-		embedding.embed("/Users/xwp/github/structurizr/examples/dsl/big-bank-plc/workspace.dsl");
+//		StructurizrNeo4jVectorStoreEmbedding embedding = new StructurizrNeo4jVectorStoreEmbedding(session, embeddingClient);
+//		embedding.embed("/Users/xwp/github/structurizr/examples/dsl/big-bank-plc/workspace.dsl");
 
 		List<String> questions = List.of(
 		"what software systems are used by customers?"
@@ -44,21 +46,37 @@ public class StructurizrNeo4jMistralAiApp {
 		,"what software systems are available?"
 		,"what users are available?"
 		,"what software systems are used by staff?"
-		,"What software systems are used by Back Office Staff?"
+		,"what software systems are used by Back Office Staff?"
 		,"what can provide a summary of a customer's bank accounts?"
 		,"what can be used to store customer information?"
 		,"what can be used by customers to view their banking information?"
 		,"what software system can be used to store customer information?");
 
-		StructurizrNeo4jVectorStoreRetriever retriever = new StructurizrNeo4jVectorStoreRetriever(session, embeddingClient);
+//		StructurizrNeo4jVectorStoreRetriever retriever = new StructurizrNeo4jVectorStoreRetriever(session, embeddingClient);
+//		questions.forEach(query -> {
+//			System.out.println("Query: %s".formatted(query));
+//			List<Document> results = retriever.similaritySearch(SearchRequest.query(query).withSimilarityThreshold(0.8).withTopK(2));
+//			results.forEach( doc -> {
+//				System.out.println(doc.toString());
+//			});
+//			System.out.println();
+//		});
 
-		questions.forEach(query -> {
-			System.out.println("Query: %s".formatted(query));
-			List<Document> results = retriever.similaritySearch(SearchRequest.query(query).withSimilarityThreshold(0.8).withTopK(2));
-			results.forEach( doc -> {
-				System.out.println(doc.toString());
-			});
-			System.out.println();
+		//https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/chat/mistralai-chat.html
+		var chatModel = new MistralAiChatClient(mistralAiApi, MistralAiChatOptions.builder()
+				.withModel(MistralAiApi.ChatModel.TINY.getValue())
+				.withTemperature(0.0f)
+				.withMaxToken(200)
+				.build());
+
+		StructurizrNeo4jQAChain qaChain = new StructurizrNeo4jQAChain(session,chatModel, embeddingClient);
+
+		questions.forEach(question -> {
+			System.out.println("======================================================================================");
+			System.out.println("Query: %s".formatted(question));
+			System.out.println("Answer: %s".formatted(qaChain.invoke(question)));
+			System.out.println("======================================================================================");
 		});
+
 	}
 }

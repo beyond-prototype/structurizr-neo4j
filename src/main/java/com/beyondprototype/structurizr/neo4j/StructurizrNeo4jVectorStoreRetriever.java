@@ -138,7 +138,7 @@ public class StructurizrNeo4jVectorStoreRetriever {
     }
 
     public List<Document> similaritySearch(String query){
-        return similaritySearch(SearchRequest.query(query));
+        return similaritySearch(SearchRequest.query(query).withSimilarityThreshold(0.8).withTopK(2));
     }
 
     public List<Document> similaritySearch(SearchRequest request){
