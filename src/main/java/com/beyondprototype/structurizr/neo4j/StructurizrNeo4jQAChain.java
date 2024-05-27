@@ -1,12 +1,16 @@
 package com.beyondprototype.structurizr.neo4j;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.structurizr.Workspace;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.internal.util.Format;
 import org.springframework.ai.chat.ChatClient;
 import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
 
 import java.util.List;
@@ -27,12 +31,17 @@ public class StructurizrNeo4jQAChain {
 
     private StructurizrNeo4jVectorStoreRetriever retriever;
 
+    private StructurizrNeo4jVectorStoreEmbedding embedding;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     public StructurizrNeo4jQAChain(Session session, ChatClient chatClient, EmbeddingClient embeddingClient) {
         this.session = session;
         this.chatClient = chatClient;
         this.schema = getSchema();
         this.embeddingClient = embeddingClient;
         this.retriever = new StructurizrNeo4jVectorStoreRetriever(session, embeddingClient);
+        this.embedding = new StructurizrNeo4jVectorStoreEmbedding(session,embeddingClient);
 
         if (!CYPHER_EXAMPLES.isEmpty()) {
             CYPHER_EXAMPLES.forEach(example -> {
@@ -67,46 +76,66 @@ public class StructurizrNeo4jQAChain {
         PromptTemplate promptTemplate = new PromptTemplate(template.toString());
 
         return promptTemplate;
-        //return promptTemplate.create(Map.of("schema", this.schema, "question","sample"));
     }
-//    public String invoke(Prompt prompt) {
-//       return chatClient.call(prompt);
-//    }
+
+    public void embed(Workspace workspace) {
+        this.embedding.embed(workspace);
+    }
+
+    public void embed(String workspaceDslFile) throws Exception {
+        this.embedding.embed(workspaceDslFile);
+    }
 
     public String invoke(String query) {
 
         PromptTemplate promptTemplate = createCypherGenerationPromptTemplate();
         Prompt cyperGenerationPrompt = promptTemplate.create(Map.of("schema", this.schema, "question",query, "examples", examples.toString()));
 
-        StringBuilder context = new StringBuilder();
+        StringBuilder cypherContext = new StringBuilder();
+        StringBuilder similarityContext = new StringBuilder();
         chatClient.call(cyperGenerationPrompt).getResults().forEach( generation -> {
 
             AssistantMessage message = generation.getOutput();
 
             String cypher = message.getContent();
-
+            StringBuilder errorMsg = new StringBuilder();
             try {
-                session.run(cypher).forEachRemaining(record -> {
-                    record.keys().forEach(key -> {
-                        context.append(key).append(":\"").append(record.get(key).asString()).append("\",");
+
+                List<org.neo4j.driver.Record> records = session.run(cypher).list();
+
+                if(records.size() > 0) {
+                    records.forEach(record -> {
+                        cypherContext.append("{");
+                        record.keys().forEach(key -> {
+                            cypherContext.append(key).append(":\"").append(record.get(key).asString()).append("\",");
+                        });
+                        cypherContext.deleteCharAt(cypherContext.lastIndexOf(","));
+                        cypherContext.append("}\n,");
                     });
-                });
+                    cypherContext.deleteCharAt(cypherContext.lastIndexOf(","));
+                }
             }catch (Exception e) {
-               // e.printStackTrace();
+                errorMsg.append("{error:\"").append(e.getMessage()).append("\"}");
+                log.error("", e);
             }
 
-            System.out.println("Generated Cypher:\n%s\n\nCypher Query Result: %s\n".formatted(cypher, context.toString()));
+            log.info("\nGenerated Cypher:\n%s\n\nCypher Query Result:\n%s\n".formatted(cypher, errorMsg.length() > 0? errorMsg.toString() : cypherContext.toString()));
 
-            retriever.similaritySearch(query).forEach(document -> {
-
-                System.out.println("Similarity Search Results: %s\n".formatted(document.getContent()));
-
-                context.append("context:\"").append(document.getContent()).append("\",");
-            });
+            List<Document> documents = retriever.similaritySearch(query);
+            StringBuilder similaritySearchResult = new StringBuilder();
+            if(documents.size() > 0){
+                documents.forEach(document -> {
+                    similarityContext.append(document.getContent()).append("\n,");
+                });
+                similarityContext.deleteCharAt(similarityContext.lastIndexOf(","));
+            }
+            log.info("\nSimilarity Search Result:\n%s\n".formatted(similarityContext.toString()));
         });
 
+        String context = "%s,%s".formatted(cypherContext.toString(), similarityContext.toString());
+//        log.info("\nContext:\n" + context);
+        Prompt qaPrompt = createQAGenerationPromptTemplate().create(Map.of("context", context, "question", query));
         StringBuilder answer = new StringBuilder();
-        Prompt qaPrompt = createQAGenerationPromptTemplate().create(Map.of("context", context.toString(), "question", query));
         chatClient.call(qaPrompt).getResults().forEach(generation -> {
             AssistantMessage message = generation.getOutput();
             answer.append(message.getContent());
@@ -253,15 +282,15 @@ public class StructurizrNeo4jQAChain {
    static final List<Example> CYPHER_EXAMPLES = List.of(
        new Example("what software systems are used by customers?","""
             MATCH (p:Element)-[r:Uses]->(ss:Element) 
-            WHERE p.type="Person" AND p.tags CONTAINS "Customer" AND ss.type="SoftwareSystem" 
+            WHERE p.type="Person" AND (p.tags CONTAINS "Customer" OR p.name CONTAINS "Customer") AND ss.type="SoftwareSystem" 
             RETURN distinct p.tags as tags, ss.name as name, ss.description as description
             """)
        ,new Example("what software systems are used by customers to withdraw cash?"
                ,"""
             MATCH (p:Element)-[r:Uses]->(ss:Element) 
-            WHERE p.type="Person" AND p.tags CONTAINS "Customer" 
+            WHERE p.type="Person" AND (p.tags CONTAINS "Customer" OR p.name CONTAINS "Customer") 
                 AND (r.description CONTAINS 'withdraw cash' OR (ss.type="SoftwareSystem" AND ss.description CONTAINS 'withdraw cash'))
-            RETURN distinct p.tags + " " + r.description + " " + ss.name as context, ss.name as SoftwareSystem, ss.description as description
+            RETURN distinct apoc.text.join([p.tags, r.description, ss.name]," ") as context, ss.name as name, ss.description as description
             """));
 
 }

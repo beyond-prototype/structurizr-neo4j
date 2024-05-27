@@ -37,8 +37,17 @@ public class StructurizrNeo4jMistralAiApp {
 
 		EmbeddingClient embeddingClient = new MistralAiEmbeddingClient(mistralAiApi);
 
-//		StructurizrNeo4jVectorStoreEmbedding embedding = new StructurizrNeo4jVectorStoreEmbedding(session, embeddingClient);
-//		embedding.embed("/Users/xwp/github/structurizr/examples/dsl/big-bank-plc/workspace.dsl");
+		//https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/chat/mistralai-chat.html
+		var chatModel = new MistralAiChatClient(mistralAiApi, MistralAiChatOptions.builder()
+				.withModel(MistralAiApi.ChatModel.TINY.getValue())
+				.withTemperature(0.0f)
+				.withMaxToken(200)
+//				.withResponseFormat(new MistralAiApi.ChatCompletionRequest.ResponseFormat("json_object"))
+				.build());
+
+		StructurizrNeo4jQAChain qaChain = new StructurizrNeo4jQAChain(session,chatModel, embeddingClient);
+
+//		qaChain.embed("/Users/xwp/github/structurizr/examples/dsl/big-bank-plc/workspace.dsl");
 
 		List<String> questions = List.of(
 		"what software systems are used by customers?"
@@ -52,31 +61,11 @@ public class StructurizrNeo4jMistralAiApp {
 		,"what can be used by customers to view their banking information?"
 		,"what software system can be used to store customer information?");
 
-//		StructurizrNeo4jVectorStoreRetriever retriever = new StructurizrNeo4jVectorStoreRetriever(session, embeddingClient);
-//		questions.forEach(query -> {
-//			System.out.println("Query: %s".formatted(query));
-//			List<Document> results = retriever.similaritySearch(SearchRequest.query(query).withSimilarityThreshold(0.8).withTopK(2));
-//			results.forEach( doc -> {
-//				System.out.println(doc.toString());
-//			});
-//			System.out.println();
-//		});
-
-		//https://docs.spring.io/spring-ai/reference/1.0-SNAPSHOT/api/chat/mistralai-chat.html
-		var chatModel = new MistralAiChatClient(mistralAiApi, MistralAiChatOptions.builder()
-				.withModel(MistralAiApi.ChatModel.TINY.getValue())
-				.withTemperature(0.0f)
-				.withMaxToken(200)
-				.build());
-
-		StructurizrNeo4jQAChain qaChain = new StructurizrNeo4jQAChain(session,chatModel, embeddingClient);
-
-		questions.forEach(question -> {
-			System.out.println("======================================================================================");
-			System.out.println("Query: %s".formatted(question));
-			System.out.println("Answer: %s".formatted(qaChain.invoke(question)));
-			System.out.println("======================================================================================");
+		questions.subList(8,10).forEach(question -> {
+//			log.info("======================================================================================");
+			log.info("\nQuery: %s\n".formatted(question));
+			log.info("\nAnswer: %s\n".formatted(qaChain.invoke(question)));
+//			System.out.println("======================================================================================");
 		});
-
 	}
 }

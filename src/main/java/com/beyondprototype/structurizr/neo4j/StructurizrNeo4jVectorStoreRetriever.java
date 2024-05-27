@@ -19,26 +19,26 @@ public class StructurizrNeo4jVectorStoreRetriever {
     CALL db.index.vector.queryRelationships("Relationship_index", $numberOfNearestNeighbours, $embeddingValue)
     YIELD relationship, score
     WHERE %s
-    RETURN relationship, score
+    RETURN distinct relationship, score
     """;
 
     private static final String QUERY_ELEMENT_INDEX = """
     CALL db.index.vector.queryNodes("Element_index", $numberOfNearestNeighbours, $embeddingValue)
     YIELD node, score
     WHERE %s
-    RETURN node, score
+    RETURN distinct node, score
     """;
 
     private static final String QUERY_PERSON = """
     MATCH (e:Element)
     WHERE e.type='Person' AND %s
-    RETURN e.tags as tags, e.name as name, e.description as description
+    RETURN distinct e.tags as tags, e.name as name, e.description as description
     """;
 
     private static final String QUERY_SOFTWARE_SYSTEM = """
     MATCH (e:Element)
     WHERE e.type='SoftwareSystem' AND %s
-    RETURN e.tags as tags, e.name as name, e.description as description
+    RETURN distinct e.tags as tags, e.name as name, e.description as description
     """;
 
     private Session session;
@@ -92,9 +92,12 @@ public class StructurizrNeo4jVectorStoreRetriever {
 
         StringBuilder text = new StringBuilder();
         List<String> textNodeProperties = List.of("name", "type", "description");
+        text.append("{");
         textNodeProperties.forEach( p -> {
-            text.append(p).append(":\"").append(node.get(p).asString()).append("\" ");
+            text.append(p).append(":\"").append(node.get(p).asString()).append("\",");
         });
+        text.deleteCharAt(text.lastIndexOf(","));
+        text.append("}");
 
         var metadata = new HashMap<String, Object>();
 //        metadata.put("distance", 1 - score);
@@ -126,7 +129,9 @@ public class StructurizrNeo4jVectorStoreRetriever {
 //        textNodeProperties.forEach( p -> {
 //            text.append(relationship.get(p).asString()).append(" ");
 //        });
-        text.append("\"%s\" %s \"%s\"".formatted(relationship.get("consumer").asString(), relationship.get("description").asString(), relationship.get("provider").asString()));
+        text.append("{description:\"");
+        text.append("%s %s %s".formatted(relationship.get("consumer").asString(), relationship.get("description").asString().toLowerCase(), relationship.get("provider").asString()));
+        text.append("\"}");
 
         relationship.keys().forEach(key -> {
             if(!key.equals("embedding")){
