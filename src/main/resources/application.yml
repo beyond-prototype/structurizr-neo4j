@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: structurizr-neo4j
+#  neo4j:
+#    uri: ${spring.neo4j.uri}
+#    authentication:
+#      username: ${spring.neo4j.authentication.username}
+#      password: ${spring.neo4j.authentication.password}
+#  ai:
+#    mistralai:
+#      api-key: ${spring.ai.mistralai.api-key}
+#      chat:
+#        options:
+#          model: ${spring.ai.mistralai.chat.options.model}
+#    azure:
+#      openai:
+#        api-key: ${spring.ai.azure.openai.api-key}
+#        endpoint: ${spring.ai.azure.openai.endpoint}
+#        chat:
+#          options:
+#            deployment-name: ${spring.ai.azure.openai.chat.options.deployment-name}
+#        embedding:
+#          options:
+#            deployment-name: ${spring.ai.azure.openai.embedding.options.deployment-name}

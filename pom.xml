@@ -2,14 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<!--
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.2.4</version>
 		<relativePath/>
 	</parent>
-	-->
 	<groupId>com.beyondprototype</groupId>
 	<artifactId>structurizr-neo4j</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
@@ -21,7 +19,10 @@
 		<neo4j.version>5.19.0</neo4j.version>
 	</properties>
 	<dependencies>
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/io.springboot.ai/spring-ai-core -->
 		<dependency>
 			<groupId>io.springboot.ai</groupId>
@@ -46,7 +47,13 @@
 			<artifactId>spring-ai-mistral-ai</artifactId>
 			<version>${spring-ai.version}</version>
 		</dependency>
-
+<!--
+		<dependency>
+			<groupId>io.springboot.ai</groupId>
+			<artifactId>spring-ai-azure-openai</artifactId>
+			<version>${spring-ai.version}</version>
+		</dependency>
+-->
 		<!-- https://mvnrepository.com/artifact/io.springboot.ai/spring-ai-neo4j-store -->
 		<dependency>
 			<groupId>io.springboot.ai</groupId>

@@ -1,5 +1,6 @@
 package com.beyondprototype.structurizr.neo4j;
 
+import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -13,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
+//@Component
 public class StructurizrNeo4jVectorStoreRetriever {
 
     private static final String QUERY_RELATIONSHIP_INDEX = """
@@ -44,6 +47,7 @@ public class StructurizrNeo4jVectorStoreRetriever {
     private Session session;
     private final EmbeddingClient embeddingClient;
 
+//    @Autowired
     public StructurizrNeo4jVectorStoreRetriever(Session session, EmbeddingClient embeddingClient) {
         this.session = session;
         this.embeddingClient = embeddingClient;

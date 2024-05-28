@@ -2,17 +2,19 @@ package com.beyondprototype.structurizr.neo4j;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.structurizr.Workspace;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.internal.util.Format;
 import org.springframework.ai.chat.ChatClient;
-import org.springframework.ai.chat.ChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +36,15 @@ public class StructurizrNeo4jQAChain {
     private StructurizrNeo4jVectorStoreEmbedding embedding;
 
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Data
+    public static class QaOutput {
+        private String question;
+        private String cypherStatement;
+        private String cypherQueryResult;
+        private String similaritySearchResult;
+        private String answer;
+    }
 
     public StructurizrNeo4jQAChain(Session session, ChatClient chatClient, EmbeddingClient embeddingClient) {
         this.session = session;
@@ -86,7 +97,13 @@ public class StructurizrNeo4jQAChain {
         this.embedding.embed(workspaceDslFile);
     }
 
-    public String invoke(String query) {
+    public QaOutput invoke(String query) {
+
+        QaOutput qaOutput = new QaOutput();
+        qaOutput.setQuestion(query);
+
+//        ArrayList<String> output = new ArrayList<>();
+//        output.add("Query: %s".formatted(query));
 
         PromptTemplate promptTemplate = createCypherGenerationPromptTemplate();
         Prompt cyperGenerationPrompt = promptTemplate.create(Map.of("schema", this.schema, "question",query, "examples", examples.toString()));
@@ -119,17 +136,22 @@ public class StructurizrNeo4jQAChain {
                 log.error("", e);
             }
 
-            log.info("\nGenerated Cypher:\n%s\n\nCypher Query Result:\n%s\n".formatted(cypher, errorMsg.length() > 0? errorMsg.toString() : cypherContext.toString()));
+//            log.info("\nGenerated Cypher:\n%s\n\nCypher Query Result:\n%s\n".formatted(cypher, errorMsg.length() > 0? errorMsg.toString() : cypherContext.toString()));
+//            output.add("Generated Cypher: %s".formatted(cypher));
+//            output.add("Cypher Query Result: %s".formatted(errorMsg.length() > 0? errorMsg.toString() : cypherContext.toString()));
+            qaOutput.setCypherStatement(cypher);
+            qaOutput.setCypherQueryResult(errorMsg.length() > 0? errorMsg.toString() : cypherContext.toString());
 
             List<Document> documents = retriever.similaritySearch(query);
-            StringBuilder similaritySearchResult = new StringBuilder();
             if(documents.size() > 0){
                 documents.forEach(document -> {
                     similarityContext.append(document.getContent()).append("\n,");
                 });
                 similarityContext.deleteCharAt(similarityContext.lastIndexOf(","));
             }
-            log.info("\nSimilarity Search Result:\n%s\n".formatted(similarityContext.toString()));
+//            log.info("\nSimilarity Search Result:\n%s\n".formatted(similarityContext.toString()));
+//            output.add("Similarity Search Result: %s".formatted(similarityContext.toString()));
+            qaOutput.setSimilaritySearchResult(similarityContext.toString());
         });
 
         String context = "%s,%s".formatted(cypherContext.toString(), similarityContext.toString());
@@ -141,7 +163,9 @@ public class StructurizrNeo4jQAChain {
             answer.append(message.getContent());
         });
 
-        return answer.toString();
+        //output.add("Answer: %s".formatted(answer.toString()));
+        qaOutput.setAnswer(answer.toString());
+        return qaOutput;
     }
 
 
