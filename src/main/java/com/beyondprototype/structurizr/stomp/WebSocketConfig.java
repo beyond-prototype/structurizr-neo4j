@@ -63,24 +63,24 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         //registry.setPreserveReceiveOrder(true);
     }
 
-    @Autowired
-    private AuthChannelInterceptorAdapter authChannelInterceptorAdapter;
+    //TODO: user authentication
+    //@Autowired
+    //private AuthChannelInterceptorAdapter authChannelInterceptorAdapter;
+    //@Override
+    //public void configureClientInboundChannel(ChannelRegistration registration) {
+    //    registration.interceptors(authChannelInterceptorAdapter);
+    //}
 
-    @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
+    @Configuration
+    @EnableScheduling
+    public class StompScheduler {
+        @Autowired
+        private SimpMessagingTemplate template;
 
-        registration.interceptors(authChannelInterceptorAdapter);
+        @Scheduled(fixedRate = 5000)
+        public void broadcast(){
+            //log.info("send greeting from server");
+            template.convertAndSend("/topic/greetings",Map.of("content","Hello from server"));
+        }
     }
-
-//    @Configuration
-//    @EnableScheduling
-//    public class StompScheduer {
-//        @Autowired
-//        private SimpMessagingTemplate template;
-//
-//        @Scheduled(fixedRate = 5000)
-//        public void broadcast(){
-//            template.convertAndSend("/topic/greetings","Hello from server");
-//        }
-//    }
 }

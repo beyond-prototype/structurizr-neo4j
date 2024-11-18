@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 
-@RestController
+//@RestController
 public class StructurizrNeo4jQAChainController {
 
     private StructurizrNeo4jQAChain chain;

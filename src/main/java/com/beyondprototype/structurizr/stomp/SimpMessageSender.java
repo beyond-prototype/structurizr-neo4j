@@ -3,7 +3,6 @@ package com.beyondprototype.structurizr.stomp;
 import com.beyondprototype.structurizr.MessageSender;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.core.util.Assert;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
@@ -20,7 +19,7 @@ public class SimpMessageSender implements MessageSender {
 
     @Override
     public void sendToUser(Object payload) {
-        Assert.requireNonEmpty(user);
+        //Assert.requireNonEmpty(user);
         SimpMessageHeaderAccessor accessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
 
         //send the message to the specific session only (broadcast = false)

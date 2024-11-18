@@ -3,8 +3,8 @@ package com.beyondprototype.structurizr.neo4j;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.*;
-import org.springframework.ai.autoconfigure.mistralai.MistralAiAutoConfiguration;
-import org.springframework.ai.autoconfigure.vectorstore.neo4j.Neo4jVectorStoreAutoConfiguration;
+//import org.springframework.ai.autoconfigure.mistralai.MistralAiAutoConfiguration;
+//import org.springframework.ai.autoconfigure.vectorstore.neo4j.Neo4jVectorStoreAutoConfiguration;
 import org.springframework.ai.embedding.EmbeddingClient;
 import org.springframework.ai.mistralai.MistralAiChatClient;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
@@ -17,7 +17,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 
 @Slf4j
-@SpringBootApplication(exclude = {MistralAiAutoConfiguration.class, Neo4jVectorStoreAutoConfiguration.class})
+//@SpringBootApplication(exclude = {MistralAiAutoConfiguration.class, Neo4jVectorStoreAutoConfiguration.class})
 public class StructurizrNeo4jMistralAiApp {
 
 	@Bean

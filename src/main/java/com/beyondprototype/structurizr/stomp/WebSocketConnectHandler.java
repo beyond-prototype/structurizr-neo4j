@@ -17,7 +17,6 @@ public class WebSocketConnectHandler<S> implements ApplicationListener<SessionCo
     private SimpMessagingTemplate simpMessagingTemplate;
 
     public WebSocketConnectHandler(SimpMessagingTemplate simpMessagingTemplate) {
-        super();
         this.simpMessagingTemplate = simpMessagingTemplate;
     }
 

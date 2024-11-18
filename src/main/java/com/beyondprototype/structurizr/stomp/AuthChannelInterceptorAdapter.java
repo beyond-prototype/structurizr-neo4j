@@ -1,5 +1,6 @@
 package com.beyondprototype.structurizr.stomp;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -7,10 +8,11 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
+//import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+//import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
     private static final String USERNAME_HEADER = "login";
@@ -24,7 +26,7 @@ public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
     }
 
     @Override
-    public Message<?> preSend(final Message<?> message, final MessageChannel channel) throws AuthenticationException {
+    public Message<?> preSend(final Message<?> message, final MessageChannel channel) {
         final StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         // authenticate client during connection
         if (StompCommand.CONNECT == accessor.getCommand()) {
@@ -32,9 +34,11 @@ public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
             final String username = accessor.getFirstNativeHeader(USERNAME_HEADER);
             final String password = accessor.getFirstNativeHeader(PASSWORD_HEADER);
 
-            // authenticate user
-            final UsernamePasswordAuthenticationToken user = webSocketAuthenticatorService.getAuthenticatedOrFail(username,password);
-            accessor.setUser(user);
+            log.info("[StompCommand.CONNECT] username: %s, password: %".formatted(username,password));
+
+            //TODO: user authentication
+            //final UsernamePasswordAuthenticationToken user = webSocketAuthenticatorService.getAuthenticatedOrFail(username,password);
+            //accessor.setUser(user);
         }
         return message;
     }
