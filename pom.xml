@@ -17,12 +17,48 @@
 		<java.version>17</java.version>
 		<spring-ai.version>1.0.3</spring-ai.version>
 		<neo4j.version>5.19.0</neo4j.version>
+		<structurizr.version>2.1.1</structurizr.version>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-freemarker</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-log4j2</artifactId>
+			<version>3.2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ldap</groupId>
+			<artifactId>spring-ldap-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-ldap</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-web</artifactId>
+		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/io.springboot.ai/spring-ai-core -->
 		<dependency>
 			<groupId>io.springboot.ai</groupId>
@@ -30,30 +66,41 @@
 			<version>${spring-ai.version}</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/io.springboot.ai/spring-ai-spring-boot-autoconfigure -->
-		<dependency>
-			<groupId>io.springboot.ai</groupId>
-			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
-			<version>${spring-ai.version}</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>io.springboot.ai</groupId>-->
+<!--			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>-->
+<!--			<version>${spring-ai.version}</version>-->
+<!--		</dependency>-->
 		<!-- https://mvnrepository.com/artifact/io.springboot.ai/spring-ai-retry -->
-		<dependency>
-			<groupId>io.springboot.ai</groupId>
-			<artifactId>spring-ai-retry</artifactId>
-			<version>${spring-ai.version}</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>io.springboot.ai</groupId>-->
+<!--			<artifactId>spring-ai-retry</artifactId>-->
+<!--			<version>${spring-ai.version}</version>-->
+<!--		</dependency>-->
 		<!-- https://mvnrepository.com/artifact/io.springboot.ai/spring-ai-mistral-ai -->
 		<dependency>
 			<groupId>io.springboot.ai</groupId>
 			<artifactId>spring-ai-mistral-ai</artifactId>
 			<version>${spring-ai.version}</version>
 		</dependency>
-<!--
+
 		<dependency>
 			<groupId>io.springboot.ai</groupId>
 			<artifactId>spring-ai-azure-openai</artifactId>
 			<version>${spring-ai.version}</version>
 		</dependency>
--->
+		<!--https://learn.microsoft.com/en-us/java/api/overview/azure/identity-readme?view=azure-java-stable-->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+			<version>1.12.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-security-keyvault-secrets</artifactId>
+			<version>4.8.3</version>
+		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/io.springboot.ai/spring-ai-neo4j-store -->
 		<dependency>
 			<groupId>io.springboot.ai</groupId>
@@ -68,28 +115,12 @@
 <!--			<version>${spring-ai.version}</version>-->
 <!--		</dependency>-->
 
-		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
-			<version>2.17.0</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-			<version>1.18.30</version>
-		</dependency>
-
-
 		<!-- https://mvnrepository.com/artifact/org.neo4j.driver/neo4j-java-driver -->
 		<dependency>
 			<groupId>org.neo4j.driver</groupId>
 			<artifactId>neo4j-java-driver</artifactId>
 			<version>${neo4j.version}</version>
 		</dependency>
-
 		<!-- https://mvnrepository.com/artifact/org.neo4j.procedure/apoc-core -->
 		<dependency>
 			<groupId>org.neo4j.procedure</groupId>
@@ -107,19 +138,12 @@
 		<dependency>
 			<groupId>com.structurizr</groupId>
 			<artifactId>structurizr-core</artifactId>
-			<version>2.1.1</version>
+			<version>${structurizr.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.structurizr</groupId>
 			<artifactId>structurizr-dsl</artifactId>
-			<version>2.1.1</version>
-		</dependency>
-
-<!--		https://github.com/cdimascio/dotenv-java/-->
-		<dependency>
-			<groupId>io.github.cdimascio</groupId>
-			<artifactId>dotenv-java</artifactId>
-			<version>3.0.0</version>
+			<version>${structurizr.version}</version>
 		</dependency>
 
 		<!--		<dependency>-->
@@ -131,10 +155,32 @@
 <!--			<artifactId>spring-boot-starter-test</artifactId>-->
 <!--			<scope>test</scope>-->
 <!--		</dependency>-->
+
+
+		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-log4j2</artifactId>
-			<version>3.2.4</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>2.17.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.15.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+			<version>1.18.30</version>
+		</dependency>
+		<!--https://github.com/cdimascio/dotenv-java/-->
+		<dependency>
+			<groupId>io.github.cdimascio</groupId>
+			<artifactId>dotenv-java</artifactId>
+			<version>3.0.0</version>
 		</dependency>
 	</dependencies>
 <!--	<dependencyManagement>-->
@@ -151,24 +197,24 @@
 
 	<build>
 		<plugins>
-<!--			<plugin>-->
-<!--				<groupId>org.springframework.boot</groupId>-->
-<!--				<artifactId>spring-boot-maven-plugin</artifactId>-->
-<!--				<configuration>-->
-<!--					<excludes>-->
-<!--						<exclude>-->
-<!--							<groupId>org.projectlombok</groupId>-->
-<!--							<artifactId>lombok</artifactId>-->
-<!--						</exclude>-->
-<!--					</excludes>-->
-<!--				</configuration>-->
-<!--			</plugin>-->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>15</source>
-					<target>15</target>
+					<source>17</source>
+					<target>17</target>
 				</configuration>
 			</plugin>
 		</plugins>

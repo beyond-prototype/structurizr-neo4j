@@ -46,3 +46,7 @@ MATCH (n:Element) where n.type = 'SoftwareSystem' RETURN n LIMIT 25
 ```
 
 ![show_software_systems](images/show_software_systems.png)
+
+### STOMP
+
+https://docs.spring.io/spring-framework/reference/web/websocket/stomp/authentication-token-based.html
