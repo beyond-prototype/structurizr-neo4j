@@ -37,7 +37,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/gs-guide-websocket")
+        //TODO: externalize endpoint to configuration
+        registry.addEndpoint("/websocket")
                 .setAllowedOrigins("*")
 //                .setHandshakeHandler(new DefaultHandshakeHandler(){
 //                    @Override
@@ -80,7 +81,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         @Scheduled(fixedRate = 5000)
         public void broadcast(){
             //log.info("send greeting from server");
-            template.convertAndSend("/topic/greetings",Map.of("content","Hello from server"));
+            template.convertAndSend("/topic/greetings",Map.of("content","stomp greetings"));
         }
     }
 }

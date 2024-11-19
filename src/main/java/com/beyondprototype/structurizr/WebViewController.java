@@ -13,19 +13,18 @@ import java.security.Principal;
 @Controller
 public class WebViewController {
 
-    @GetMapping(value = "/", produces = MediaType.TEXT_HTML_VALUE)
+    //@GetMapping(value = "/", produces = MediaType.TEXT_HTML_VALUE)
     public String indexView(ModelMap modelMap, Principal user, HttpSession session) {
 
         log.info("indexView User :" + (user == null ? "Unknown" : user.getName()));
         log.info("indexView HttpSession :" + (session == null ? "Unknown" : session.getId()));
-        //TODO: externalize brokerURL to configuration
-        modelMap.put("stompBrokerURL", "ws://localhost:8090/gs-guide-websocket");
+
         //TODO: user authentication
         //modelMap.put("user", user);
         modelMap.put("user", new Principal() {
             @Override
             public String getName() {
-                if(session == null) {
+                if (session == null) {
                     return "Unknown";
                 }
                 return session.getId();
@@ -33,5 +32,29 @@ public class WebViewController {
         });
 
         return "index";
+    }
+
+    //http://localhost:8090/stomp
+    @GetMapping(value = "/stomp", produces = MediaType.TEXT_HTML_VALUE)
+    public String indexViewStomp(ModelMap modelMap, Principal user, HttpSession session) {
+        modelMap.put("client", "stomp");
+        //TODO: externalize serverUrl to configuration
+        modelMap.put("serverUrl", "ws://localhost:8090/websocket");
+        return indexView(modelMap, user, session);
+    }
+
+    //http://localhost:8090/
+    @GetMapping(value = "/", produces = MediaType.TEXT_HTML_VALUE)
+    public String indexViewSse1(ModelMap modelMap, Principal user, HttpSession session) {
+        return indexViewSse(modelMap, user, session);
+    }
+
+    //http://localhost:8090/sse
+    @GetMapping(value = "/sse", produces = MediaType.TEXT_HTML_VALUE)
+    public String indexViewSse(ModelMap modelMap, Principal user, HttpSession session) {
+        modelMap.put("client", "sse");
+        //TODO: externalize serverUrl to configuration
+        modelMap.put("serverUrl", "http://localhost:8090/answer/stream");
+        return indexView(modelMap, user, session);
     }
 }

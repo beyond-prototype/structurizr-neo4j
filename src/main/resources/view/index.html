@@ -2,14 +2,21 @@
 <html>
 <head>
     <title>Architecture AI</title>
-<!--    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">-->
-<!--    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>-->
-<!--    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>-->
+<#--
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+-->
     <link rel="stylesheet" href="/bootstrap.min.css">
+    <script>const username= "${user.name}"; const serverUrl = "${serverUrl}";</script>
     <script src="/jquery-3.1.1.min.js"></script>
+    <#if client=="stomp">
     <script src="/stomp.umd.min.js"></script>
-    <script>const username= "${user.name}"; const stompBrokerURL = "${stompBrokerURL}";</script>
     <script src="/stomp-client.js"></script>
+    </#if>
+    <#if client=="sse">
+    <script src="/sse-client.js"></script>
+    </#if>
 </head>
 <style>
     table {

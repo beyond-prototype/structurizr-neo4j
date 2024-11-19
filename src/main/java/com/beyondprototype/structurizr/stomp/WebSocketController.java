@@ -18,21 +18,21 @@ import java.util.Map;
 @Controller
 public class WebSocketController {
 
-    @MessageMapping("/hello")
+    @MessageMapping("/greeting")
     @SendTo("/topic/greetings")
-    public String greeting(String message) throws Exception {
+    public Object greeting(@Payload String message) throws Exception {
         Thread.sleep(1000); //simulate delay
-        return new String("Hello %s".formatted(HtmlUtils.htmlEscape(message)));
+        return Map.of("content", "Hello %s".formatted(HtmlUtils.htmlEscape(message)));
     }
 
     @Autowired
     private SimpMessagingTemplate template;
 
-    @MessageMapping("/saac")
-    @SendToUser(value="/queue/saac", broadcast = false)
+    @MessageMapping("/answer")
+    @SendToUser(value="/queue/answer", broadcast = false)
     public Object saac(@Payload Object input, Principal user, @Header("simpSessionId") String sessionId) {
 
-        SimpMessageSender sender = new SimpMessageSender(template, sessionId, user.getName(),"/queue/saac");
+        SimpMessageSender sender = new SimpMessageSender(template, sessionId, user.getName(),"/queue/answer");
 
         sender.sendToUser(Map.of("status","Only for session :%s".formatted(sessionId)));
 

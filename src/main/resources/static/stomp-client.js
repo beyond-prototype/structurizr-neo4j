@@ -1,6 +1,6 @@
 //let username = "web";
 const stompClient = new StompJs.Client({
-    brokerURL: stompBrokerURL
+    brokerURL: serverUrl
     ,connectHeaders: {
         login: username,
         passcode:'1234'
@@ -14,19 +14,23 @@ const stompClient = new StompJs.Client({
 });
 
 stompClient.onConnect = (frame) => {
-    setConnected(true);
     console.log('Connected: ' + frame);
-    stompClient.subscribe('/user/queue/saac', (output)=> {
+    stompClient.subscribe('/user/queue/answer', (output)=> {
         console.log('Received output: '+output.body);
-        //console.log(JsON.parse(output.body));
         var result = JSON.parse(output.body);
         process(result);
         window.scrollTo(0, document.body.scrollHeight);
     });
 
     stompClient.subscribe('/topic/greetings', (output) => {
-        showGreeting(JSON.parse(output.body).content);
         console.log('greetings-Received output: '+output.body);
+        var message = JSON.parse(output.body).content;
+        $("#answer").append(message);
+    });
+
+    stompClient.publish({
+        destination: "/app/greeting",
+        body: JSON.stringify({'username': username})
     });
 };
 
@@ -39,32 +43,11 @@ stompClient.onStompError = (frame) => {
     console.error('Additional details: ' + frame.body);
 };
 
-function setConnected(connected) {
-    $("#connect").prop("disabled", connected);
-    $("#disconnect").prop("disabled", !connected);
-    $("#answer").html("");
-}
-
-function sendName() {
-    stompClient.publish({
-        destination: "/app/hello",
-        body: JSON.stringify({'name': $("#name").val()})
-    });
-}
-
-function showGreeting(message) {
-    $("#answer").append(message);
-}
-
 $(function () {
-
     stompClient.activate();
     //stompClient.deactivate();
-
     $("form").on('submit', (e) => e.preventDefault());
-
     $("#submit").click(() => sendQuestion());
-
     $("#workspace").hide();
 });
 
@@ -77,7 +60,7 @@ function sendQuestion() {
     $("#workspace").html("");
 
     stompClient.publish({
-        destination:"/app/saac",
+        destination:"/app/answer",
         body: JSON.stringify({'query': $("#question").val()})
     });
 }
